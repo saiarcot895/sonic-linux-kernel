@@ -1,0 +1,160 @@
+Revert "net: ensure unbound datagram socket to be chosen when not in a VRF"
+
+From: Saikrishna Arcot <sarcot@microsoft.com>
+
+This is reverting commit 6da5b0f from the Linux kernel. This commit
+changes how UDP sockets that are not in a vrf are selected when a packet
+is received. Prior to this commit, if there were two UDP sockets
+listening on the same address and port, but one was bound to an
+interface and the other was unbound, and a packet arrived on that
+interface, then the socket that was bound to that interface would get
+selected. With this commit, the socket that is not bound would get
+selected instead.
+
+When dhcrelay (from isc-dhcp) is compiled such that it listens on UDP
+sockets instead of opening raw sockets and attaching a filter to it,
+this change causes UDP messages from the upstream servers to get picked
+up by the unbound socket (what it calls the fallback interface) instead
+of the bound socket, and that message gets ignored. Therefore, this
+change is getting reverted.
+
+Signed-off-by: Saikrishna Arcot <sarcot@microsoft.com>
+---
+ include/net/udp.h   |   11 -----------
+ net/core/sock.c     |    2 --
+ net/ipv4/udp.c      |   15 +++++++++------
+ net/ipv6/datagram.c |   10 +++-------
+ net/ipv6/udp.c      |   14 +++++++++-----
+ 5 files changed, 21 insertions(+), 31 deletions(-)
+
+diff --git a/include/net/udp.h b/include/net/udp.h
+index 949ae14a5..8db39b7f3 100644
+--- a/include/net/udp.h
++++ b/include/net/udp.h
+@@ -255,17 +255,6 @@ static inline int udp_rqueue_get(struct sock *sk)
+ 	return sk_rmem_alloc_get(sk) - READ_ONCE(udp_sk(sk)->forward_deficit);
+ }
+ 
+-static inline bool udp_sk_bound_dev_eq(struct net *net, int bound_dev_if,
+-				       int dif, int sdif)
+-{
+-#if IS_ENABLED(CONFIG_NET_L3_MASTER_DEV)
+-	return inet_bound_dev_eq(!!net->ipv4.sysctl_udp_l3mdev_accept,
+-				 bound_dev_if, dif, sdif);
+-#else
+-	return inet_bound_dev_eq(true, bound_dev_if, dif, sdif);
+-#endif
+-}
+-
+ /* net/ipv4/udp.c */
+ void udp_destruct_sock(struct sock *sk);
+ void skb_consume_udp(struct sock *sk, struct sk_buff *skb, int len);
+diff --git a/net/core/sock.c b/net/core/sock.c
+index c75c1e723..00d4d2880 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -572,8 +572,6 @@ static int sock_bindtoindex_locked(struct sock *sk, int ifindex)
+ 		goto out;
+ 
+ 	sk->sk_bound_dev_if = ifindex;
+-	if (sk->sk_prot->rehash)
+-		sk->sk_prot->rehash(sk);
+ 	sk_dst_reset(sk);
+ 
+ 	ret = 0;
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index 21624a29d..77f75623b 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -361,7 +361,6 @@ static int compute_score(struct sock *sk, struct net *net,
+ {
+ 	int score;
+ 	struct inet_sock *inet;
+-	bool dev_match;
+ 
+ 	if (!net_eq(sock_net(sk), net) ||
+ 	    udp_sk(sk)->udp_port_hash != hnum ||
+@@ -386,11 +385,15 @@ static int compute_score(struct sock *sk, struct net *net,
+ 		score += 4;
+ 	}
+ 
+-	dev_match = udp_sk_bound_dev_eq(net, sk->sk_bound_dev_if,
+-					dif, sdif);
+-	if (!dev_match)
+-		return -1;
+-	score += 4;
++	if (sk->sk_bound_dev_if) {
++		bool dev_match = (sk->sk_bound_dev_if == dif ||
++				  sk->sk_bound_dev_if == sdif);
++
++		if (!dev_match)
++			return -1;
++		if (sk->sk_bound_dev_if)
++			score += 4;
++	}
+ 
+ 	if (READ_ONCE(sk->sk_incoming_cpu) == raw_smp_processor_id())
+ 		score++;
+diff --git a/net/ipv6/datagram.c b/net/ipv6/datagram.c
+index cc8ad7dde..2bb88373f 100644
+--- a/net/ipv6/datagram.c
++++ b/net/ipv6/datagram.c
+@@ -785,7 +785,6 @@ int ip6_datagram_send_ctl(struct net *net, struct sock *sk,
+ 		case IPV6_2292PKTINFO:
+ 		    {
+ 			struct net_device *dev = NULL;
+-			int src_idx;
+ 
+ 			if (cmsg->cmsg_len < CMSG_LEN(sizeof(struct in6_pktinfo))) {
+ 				err = -EINVAL;
+@@ -793,15 +792,12 @@ int ip6_datagram_send_ctl(struct net *net, struct sock *sk,
+ 			}
+ 
+ 			src_info = (struct in6_pktinfo *)CMSG_DATA(cmsg);
+-			src_idx = src_info->ipi6_ifindex;
+ 
+-			if (src_idx) {
++			if (src_info->ipi6_ifindex) {
+ 				if (fl6->flowi6_oif &&
+-				    src_idx != fl6->flowi6_oif &&
+-				    (sk->sk_bound_dev_if != fl6->flowi6_oif ||
+-				     !sk_dev_equal_l3scope(sk, src_idx)))
++				    src_info->ipi6_ifindex != fl6->flowi6_oif)
+ 					return -EINVAL;
+-				fl6->flowi6_oif = src_idx;
++				fl6->flowi6_oif = src_info->ipi6_ifindex;
+ 			}
+ 
+ 			addr_type = __ipv6_addr_type(&src_info->ipi6_addr);
+diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
+index a51f01f58..aa52d02aa 100644
+--- a/net/ipv6/udp.c
++++ b/net/ipv6/udp.c
+@@ -105,7 +105,6 @@ static int compute_score(struct sock *sk, struct net *net,
+ {
+ 	int score;
+ 	struct inet_sock *inet;
+-	bool dev_match;
+ 
+ 	if (!net_eq(sock_net(sk), net) ||
+ 	    udp_sk(sk)->udp_port_hash != hnum ||
+@@ -130,10 +129,15 @@ static int compute_score(struct sock *sk, struct net *net,
+ 		score++;
+ 	}
+ 
+-	dev_match = udp_sk_bound_dev_eq(net, sk->sk_bound_dev_if, dif, sdif);
+-	if (!dev_match)
+-		return -1;
+-	score++;
++	if (sk->sk_bound_dev_if) {
++		bool dev_match = (sk->sk_bound_dev_if == dif ||
++				  sk->sk_bound_dev_if == sdif);
++
++		if (!dev_match)
++			return -1;
++		if (sk->sk_bound_dev_if)
++			score++;
++	}
+ 
+ 	if (READ_ONCE(sk->sk_incoming_cpu) == raw_smp_processor_id())
+ 		score++;

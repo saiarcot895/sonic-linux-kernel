@@ -1,0 +1,52 @@
+Revert "ipv6: do not drop vrf udp multicast packets"
+
+From: Saikrishna Arcot <sarcot@microsoft.com>
+
+This is reverting commit 7bd2db4 from the Linux kernel. This appears to
+be a bugfix commit applied on top of commit 6da5b0f.
+
+Signed-off-by: Saikrishna Arcot <sarcot@microsoft.com>
+---
+ net/ipv6/udp.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
+index 29d969135..a51f01f58 100644
+--- a/net/ipv6/udp.c
++++ b/net/ipv6/udp.c
+@@ -759,7 +759,7 @@ static int udpv6_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+ static bool __udp_v6_is_mcast_sock(struct net *net, struct sock *sk,
+ 				   __be16 loc_port, const struct in6_addr *loc_addr,
+ 				   __be16 rmt_port, const struct in6_addr *rmt_addr,
+-				   int dif, int sdif, unsigned short hnum)
++				   int dif, unsigned short hnum)
+ {
+ 	struct inet_sock *inet = inet_sk(sk);
+ 
+@@ -771,7 +771,7 @@ static bool __udp_v6_is_mcast_sock(struct net *net, struct sock *sk,
+ 	    (inet->inet_dport && inet->inet_dport != rmt_port) ||
+ 	    (!ipv6_addr_any(&sk->sk_v6_daddr) &&
+ 		    !ipv6_addr_equal(&sk->sk_v6_daddr, rmt_addr)) ||
+-	    !udp_sk_bound_dev_eq(net, sk->sk_bound_dev_if, dif, sdif) ||
++	    (sk->sk_bound_dev_if && sk->sk_bound_dev_if != dif) ||
+ 	    (!ipv6_addr_any(&sk->sk_v6_rcv_saddr) &&
+ 		    !ipv6_addr_equal(&sk->sk_v6_rcv_saddr, loc_addr)))
+ 		return false;
+@@ -805,7 +805,6 @@ static int __udp6_lib_mcast_deliver(struct net *net, struct sk_buff *skb,
+ 	unsigned int offset = offsetof(typeof(*sk), sk_node);
+ 	unsigned int hash2 = 0, hash2_any = 0, use_hash2 = (hslot->count > 10);
+ 	int dif = inet6_iif(skb);
+-	int sdif = inet6_sdif(skb);
+ 	struct hlist_node *node;
+ 	struct sk_buff *nskb;
+ 
+@@ -820,8 +819,7 @@ static int __udp6_lib_mcast_deliver(struct net *net, struct sk_buff *skb,
+ 
+ 	sk_for_each_entry_offset_rcu(sk, node, &hslot->head, offset) {
+ 		if (!__udp_v6_is_mcast_sock(net, sk, uh->dest, daddr,
+-					    uh->source, saddr, dif, sdif,
+-					    hnum))
++					    uh->source, saddr, dif, hnum))
+ 			continue;
+ 		/* If zero checksum and no_check is not on for
+ 		 * the socket then skip it.

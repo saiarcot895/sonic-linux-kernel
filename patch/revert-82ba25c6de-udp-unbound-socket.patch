@@ -1,0 +1,26 @@
+Revert "udp: only choose unbound UDP socket for multicast when not in a VRF"
+
+From: Saikrishna Arcot <sarcot@microsoft.com>
+
+This is reverting commit 82ba25c6de from the Linux kernel. This is a bugfix
+commit applied on top of 6da5b0f, which is being reverted as well.
+
+Signed-off-by: Saikrishna Arcot <sarcot@microsoft.com>
+---
+ net/ipv4/udp.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index 9d28b2778..21624a29d 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -583,7 +583,8 @@ static inline bool __udp_is_mcast_sock(struct net *net, struct sock *sk,
+ 	    (inet->inet_dport != rmt_port && inet->inet_dport) ||
+ 	    (inet->inet_rcv_saddr && inet->inet_rcv_saddr != loc_addr) ||
+ 	    ipv6_only_sock(sk) ||
+-	    !udp_sk_bound_dev_eq(net, sk->sk_bound_dev_if, dif, sdif))
++	    (sk->sk_bound_dev_if && sk->sk_bound_dev_if != dif &&
++	     sk->sk_bound_dev_if != sdif))
+ 		return false;
+ 	if (!ip_mc_sf_allow(sk, loc_addr, rmt_addr, dif, sdif))
+ 		return false;

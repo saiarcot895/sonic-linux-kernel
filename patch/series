@@ -89,6 +89,10 @@ driver-ixgbe-external-phy.patch
 #
 # Marvell platform patches for 4.19
 armhf_secondary_boot_online.patch
+
+revert-82ba25c6de-udp-unbound-socket.patch
+revert-7bd2db4-udp-unbound-socket.patch
+revert-6da5b0f-udp-unbound-socket.patch
 ############################################################
 #
 # Internal patches will be added below (placeholder)
