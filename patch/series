@@ -86,13 +86,22 @@ driver-ixgbe-external-phy.patch
 #0031-backport-nvme-Add-hardware-monitoring-support.patch
 #0032-platform-mellanox-mlxreg-hotplug-Use-capability-regi.patch
 
-#
-# Marvell platform patches for 4.19
-armhf_secondary_boot_online.patch
+
+# Cisco patches for 4.19 kernel
+cisco-mtd-part.patch
+#cisco-mdio-mux-support-acpi.patch
+cisco-x86-gpio-config.patch
 
 revert-82ba25c6de-udp-unbound-socket.patch
 revert-7bd2db4-udp-unbound-socket.patch
 revert-6da5b0f-udp-unbound-socket.patch
+
+#
+# Marvell platform patches for 4.19
+armhf_secondary_boot_online.patch
+
+#
+#
 ############################################################
 #
 # Internal patches will be added below (placeholder)
