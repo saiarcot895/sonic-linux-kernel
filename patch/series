@@ -92,9 +92,7 @@ cisco-mtd-part.patch
 #cisco-mdio-mux-support-acpi.patch
 cisco-x86-gpio-config.patch
 
-revert-82ba25c6de-udp-unbound-socket.patch
-revert-7bd2db4-udp-unbound-socket.patch
-revert-6da5b0f-udp-unbound-socket.patch
+0001-net-prefer-socket-bound-to-interface-when-not-in-VRF.patch
 
 #
 # Marvell platform patches for 4.19
