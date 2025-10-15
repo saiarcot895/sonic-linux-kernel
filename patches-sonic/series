@@ -161,12 +161,7 @@ cisco-npu-disable-other-bars.patch
 #
 # Marvell platform patches for 6.1 kernel
 0001-armhf_secondary_boot_online.patch
-#0002-arm64-dts-Update-cache-properties-for-marvell.patch # Upstreamed
-#0003-arm64-dts-marvell-Add-NAND-flash-controller-to-AC5.patch # Upstreamed
-#0004-arm64-dts-ac5-add-mmc-node-and-clock.patch # Upstreamed
 0005-dts-ac5-marvell-Add-switching-watchdog-node.patch
-#0006-mmc-xenon-Add-ac5-support-via-bounce-buffer.patch # Upstreamed
-#0007-usb-ehci-Add-support-for-ac5.patch # Upstreamed but no 64-bit, so the next 0007
 0007-usb-ehci-Add-support-for-ac5-with-DMA-mask-64-bit.patch
 0008-mv6xxx-Fix-i2c-lock-due-to-arb-loss.patch
 0009-dt-bindings-marvell-Add-ARMADA-7K-properties.patch
@@ -177,6 +172,7 @@ cisco-npu-disable-other-bars.patch
 0017-Extend-driver-to-support-XMC-XM25QH256C-device.patch
 0018-drivers-i2c-fix-after-kdump-crash.patch
 0019-irqchip-mvebu-gicp-Clear-pending-interrupts-on-init.patch
+0022-drivers-restore-legacy-I2C_COMPAT-i2c-adapter.patch
 
 # amd-pensando elba support
 # TODO(trixie): update for current version
