@@ -58,8 +58,8 @@ driver-net-tg3-change-dma-mask-for-57766.patch
 # Mellanox patches for 5.10
 # TODO(trixie): update for current version
 ###-> mellanox_sdk-start
-#0001-psample-define-the-macro-PSAMPLE_MD_EXTENDED_ATTR.patch
-#0002-drop_monitor-Extend-WJH-buffer-linux-channel.patch
+0001-psample-define-the-macro-PSAMPLE_MD_EXTENDED_ATTR.patch
+0002-drop_monitor-Extend-WJH-buffer-linux-channel.patch
 ###-> mellanox_sdk-end
 
 ###-> mellanox_hw_mgmt-start
