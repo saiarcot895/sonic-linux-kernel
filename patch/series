@@ -249,3 +249,4 @@ fix-khungtaskd-panic-on-stalled-coredump-upstream.patch
 # Do not add any public patch below this marker
 #
 ############################################################
+0018-drivers-rtc-handle-OTF-clock-changes.patch
