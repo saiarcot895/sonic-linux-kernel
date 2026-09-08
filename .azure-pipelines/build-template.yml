@@ -11,6 +11,7 @@ parameters:
   values:
   - vs
   - pensando
+  - aspeed
   default: vs
 
 - name: pool
@@ -75,7 +76,7 @@ jobs:
           export SECURE_UPGRADE_MODE=dev
           export SECURE_UPGRADE_SIGNING_CERT=$(System.DefaultWorkingDirectory)/build_trusted_key.pem
       fi
-      CONFIGURED_ARCH=${{ parameters.arch }} CONFIGURED_PLATFORM=${{ parameters.platform }} make
+      CONFIGURED_ARCH=${{ parameters.arch }} CONFIGURED_PLATFORM=${{ parameters.platform }} ADDITIONAL_BUILD_PROFILES=pkg.linux.nokerneldbginfo make
     displayName: "Compile sonic kernel"
   - script: |
       set -e
