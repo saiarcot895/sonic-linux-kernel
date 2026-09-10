@@ -237,6 +237,8 @@ driver-tty-serial-8250-add-support-for-fintek-F81214E.patch # Linux upstream pen
 0014-i2c-xiic-cosmetic-use-resource-format-specifier-in-d.patch
 0015-i2c-xiic-use-numbered-adapter-registration.patch
 0016-i2c-xiic-skip-input-clock-setup-on-non-OF-systems.patch
+0017-dt-bindings-trivial-devices-Add-Delta-Q54SN120A1-and-Q54SW120A7.patch
+0018-hwmon-pmbus-Add-Delta-Q54SN120A1-Q54SW120A7-chip.patch
 
 # 
 0001-PCI-AER-Simplify-pci_print_aer.patch
@@ -264,13 +266,17 @@ driver-tty-serial-8250-add-support-for-fintek-F81214E.patch # Linux upstream pen
 #
 ############################################################
 ###-> aspeed
+###-> aspeed-upstream
 #0001-aspeed-ast2700-support.patch
 #0002-aspeed-ast2700-aspeed-new-files-update-to-6.12-00.07.02.patch
 #0003-aspeed-ast2700-aspeed-diff-vendor-independent-changes-update-to-6.12-00.07.02.patch
 #mmc-sdhci-of-aspeed-Improve-CMD6-timing_v6.18.patch
 #mmc-sdhci-of-aspeed-Optimize-tuning-mechanism_v6.12.patch
+###-> aspeed-upstream-end
 #aspeed-spi-txrx-fix-full-duplex-capture.patch
 #nexthop-b27-dts.patch
+#serial-8250_aspeed-fix-UDMA-ring-pointer-desync.patch
+#soc-aspeed-udma-lower-idle-timeout.patch
 #0001-Add-device-tree-for-Nokia-BMC-H6-128-platform.patch
 #arista_goldfinch-dts.patch
 #0001-DTS-Aspeed-Nvidia-spc6-a1-bmc-dts.patch
