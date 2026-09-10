@@ -1,0 +1,585 @@
+From 00a401bfbf89926ecc24882259826427cfd32b7d Mon Sep 17 00:00:00 2001
+From: Chandrasekaran Swaminathan <chander@nexthop.ai>
+Date: Thu, 2 Jul 2026 16:53:15 +0000
+Subject: [PATCH] Add NextHop B27 R0 device tree
+
+This adds nexthop-b27-r0.dts for NextHop B27 R0 hardware.
+
+Hardware differences from ast2700-evb:
+- MAC0: Fixed-link (1000Mbps) instead of PHY - direct RGMII to BCM switch
+- MAC1: Disabled (not connected)
+- MDIO0/MDIO1: Disabled (no PHY chips)
+
+The device tree is based on ast2700-evb.dts with modifications for
+production hardware that does not have PHY chips.
+
+Signed-off-by: Chandrasekaran Swaminathan <chander@nexthop.ai>
+---
+ arch/arm64/boot/dts/aspeed/Makefile           |   1 +
+ arch/arm64/boot/dts/aspeed/nexthop-b27-r0.dts | 542 ++++++++++++++++++
+ 2 files changed, 543 insertions(+)
+ create mode 100644 arch/arm64/boot/dts/aspeed/nexthop-b27-r0.dts
+
+diff --git a/arch/arm64/boot/dts/aspeed/Makefile b/arch/arm64/boot/dts/aspeed/Makefile
+index 7c31f31..3e904b2 100644
+--- a/arch/arm64/boot/dts/aspeed/Makefile
++++ b/arch/arm64/boot/dts/aspeed/Makefile
+@@ -2,6 +2,7 @@
+ 
+ dtb-$(CONFIG_ARCH_ASPEED) += \
+ 	ast2700-evb.dtb \
++	nexthop-b27-r0.dtb \
+ 	ast2700-evb_ast1700-evb.dtb \
+ 	ast2700-evb_ast1700-evb-dual.dtb \
+ 	ast2700-raw.dtb \
+diff --git a/arch/arm64/boot/dts/aspeed/nexthop-b27-r0.dts b/arch/arm64/boot/dts/aspeed/nexthop-b27-r0.dts
+new file mode 100644
+index 0000000..7d1f339
+--- /dev/null
++++ b/arch/arm64/boot/dts/aspeed/nexthop-b27-r0.dts
+@@ -0,0 +1,542 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++//
++// NextHop AST2700 based B27 R0 Device Tree
++// Based on ast2700-evb.dts with modifications for NextHop B27 card
++
++/dts-v1/;
++
++#include "aspeed-g7.dtsi"
++#include <dt-bindings/gpio/aspeed-gpio.h>
++
++#define PCIE0_EP 0	// 1: EP, 0: RC
++#define PCIE1_EP 0	// 1: EP, 0: RC
++#define PCIE2_RC 0	// 1: RC, 0: SGMII
++
++/ {
++	model = "Nexthop B27 R0";
++	compatible = "nexthop,nexthop-b27-r0", "aspeed,ast2700";
++
++	chosen {
++		stdout-path = &uart12;
++	};
++
++	firmware {
++		optee: optee {
++			compatible = "linaro,optee-tz";
++			method = "smc";
++		};
++	};
++
++	memory@400000000 {
++		device_type = "memory";
++		reg = <0x4 0x00000000 0x0 0x40000000>;
++	};
++
++	reserved-memory {
++		#address-cells = <2>;
++		#size-cells = <2>;
++		ranges;
++
++		#include "ast2700-reserved-mem.dtsi"
++		gfx_memory: framebuffer {
++			size = <0x0 0x01000000>;
++			alignment = <0x0 0x01000000>;
++			compatible = "shared-dma-pool";
++			reusable;
++		};
++
++		xdma_memory0: xdma0 {
++			size = <0x0 0x01000000>;
++			alignment = <0x0 0x01000000>;
++			compatible = "shared-dma-pool";
++			no-map;
++		};
++
++		xdma_memory1: xdma1 {
++			size = <0x0 0x01000000>;
++			alignment = <0x0 0x01000000>;
++			compatible = "shared-dma-pool";
++			no-map;
++		};
++
++		espi0_mcyc_memory: mcyc0 {
++			size = <0x0 0x01000000>;
++			alignment = <0x0 0x00010000>;
++			compatible = "shared-dma-pool";
++			reusable;
++		};
++	};
++	iio-hwmon {
++		compatible = "iio-hwmon";
++		status = "okay";
++		io-channels = <&adc0 0>, <&adc0 1>, <&adc0 2>, <&adc0 3>,
++				<&adc0 4>, <&adc0 5>, <&adc0 6>, <&adc0 7>,
++				<&adc1 0>, <&adc1 1>, <&adc1 2>, <&adc1 3>,
++				<&adc1 4>, <&adc1 5>, <&adc1 6>, <&adc1 7>;
++	};
++};
++
++&edac {
++	status = "okay";
++};
++
++
++&jtag1 {
++	status = "okay";
++};
++
++
++&pinctrl0 {
++	pinctrl_emmcclk_driving: emmcclk-driving {
++		pins = "AC14";
++		drive-strength = <2>;
++	};
++
++	pinctrl_emmccmd_driving: emmccmd-driving {
++		pins = "AE15";
++		drive-strength = <1>;
++	};
++	pinctrl_emmcdat_driving: emmcdat-driving {
++		pins = "AD14", "AE14", "AF14", "AB13";
++		drive-strength = <1>;
++	};
++};
++
++&pinctrl1 {
++	pinctrl_i3c0_3_hv_voltage: i3chv-voltage {
++		pins = "U25";
++		power-source = <1800>;
++	};
++
++	pinctrl_i3c0_driving: i3c0-driving {
++		pins = "U25", "U26";
++		drive-strength = <2>;
++	};
++
++	pinctrl_i3c1_driving: i3c1-driving {
++		pins = "Y26", "AA24";
++		drive-strength = <2>;
++	};
++
++	pinctrl_i3c2_driving: i3c2-driving {
++		pins = "R25", "AA26";
++		drive-strength = <2>;
++	};
++
++	pinctrl_i3c3_driving: i3c3-driving {
++		pins = "R26", "Y25";
++		drive-strength = <2>;
++	};
++
++	pinctrl_i3c12_15_hv_voltage: i3chv-voltage {
++		pins = "W25";
++		power-source = <1800>;
++	};
++
++	pinctrl_i3c12_driving: i3c12-driving {
++		pins = "W25", "Y23";
++		drive-strength = <2>;
++	};
++
++	pinctrl_i3c13_driving: i3c13-driving {
++		pins = "Y24", "W21";
++		drive-strength = <2>;
++	};
++
++	pinctrl_i3c14_driving: i3c14-driving {
++		pins = "AA23", "AC22";
++		drive-strength = <2>;
++	};
++
++	pinctrl_i3c15_driving: i3c15-driving {
++		pins = "AB22", "Y21";
++		drive-strength = <2>;
++	};
++
++	pinctrl_rgmii0_driving: rgmii0-driving {
++		pins = "C20", "C19", "A8", "R14", "A7", "P14",
++		       "D20", "A6", "B6", "N14", "B7", "B8";
++		drive-strength = <1>;
++	};
++
++	pinctrl_rgmii1_driving: rgmii1-driving {
++		pins = "D19", "C19", "D15", "B12", "B10", "P13",
++		       "C18", "C6", "C7", "D7", "N13", "C8";
++		drive-strength = <1>;
++	};
++};
++
++&gpio1 {
++	pinctrl-0 = <&pinctrl_i3c0_3_hv_voltage &pinctrl_i3c12_15_hv_voltage
++		     &pinctrl_i3c0_driving &pinctrl_i3c1_driving
++		     &pinctrl_i3c2_driving &pinctrl_i3c3_driving
++		     &pinctrl_i3c12_driving &pinctrl_i3c13_driving
++		     &pinctrl_i3c14_driving &pinctrl_i3c15_driving>;
++	pinctrl-names = "default";
++
++	gpio-line-names =
++	/*A0-A7*/	"","","","","","","","",
++	/*B0-B7*/	"","","","","","","","",
++	/*C0-C7*/	"","","","","","","","",
++	/*D0-D7*/	"","","","","","","","",
++	/*E0-E7*/	"","bmc_mode","cpe_ctrl","fpga_prog",
++				"eeprom_wp","","","",
++	/*F0-F7*/	"pwr_cyc_req","cpu_alert_l","cpu_rst_l","",
++				"","","","",
++	/*G0-G7*/	"","","","",
++				"tpm_rst_l","tpm_pirq","tpm_gpio_0","tpm_gpio_1",
++	/*H0-H7*/	"tpm_gpio_2","","","","","","","",
++	/*I0-I7*/	"","","","","","","","",
++	/*J0-J7*/	"","","","","","","","",
++	/*K0-K7*/	"","","","","","","","",
++	/*L0-L7*/	"","","","","","","","",
++	/*M0-M7*/	"","","","","","","","",
++	/*N0-N7*/	"","","","","","","","",
++	/*O0-O7*/	"","","","","","","","",
++	/*P0-P7*/	"","","","","","","","",
++	/*Q0-Q7*/	"","","","","","","","emmc_rst",
++	/*R0-R7*/	"","","","","","","","",
++	/*S0-S7*/	"","","","","","","","",
++	/*T0-T7*/	"","","","","","","","",
++	/*U0-U7*/	"","","","","","","","",
++	/*V0-V7*/	"","","","","","","","",
++	/*W0-W7*/	"","","","","","","","",
++	/*X0-X7*/	"","","","","","","","",
++	/*Y0-Y7*/	"","","","","","","","",
++	/*Z0-Z7*/	"","","","","","","","",
++	/*AA0-AA7*/	"","","","","","","","",
++	/*AB0-AB7*/	"","","","","","","","",
++	/*AC0-AC7*/	"","","","","","","","";
++
++	/* TODO: Add more GPIOs hogs as needed, rename & add labels for clarity */
++
++	bmc-gpio2-hog {
++		gpio-hog;
++		gpios = <ASPEED_GPIO(H, 2) (GPIO_ACTIVE_HIGH | GPIO_TRANSITORY)>;
++		output-low;
++	};
++
++	bmc-gpio3-hog {
++		gpio-hog;
++		gpios = <ASPEED_GPIO(D, 4) GPIO_ACTIVE_HIGH>;
++		input;
++	};
++
++	bmc-gpio6-hog {
++		gpio-hog;
++		gpios = <ASPEED_GPIO(H, 3) GPIO_ACTIVE_HIGH>;
++		input;
++	};
++};
++
++
++&uart1 {
++	status = "okay";
++};
++
++&uart12 {
++	dma-mode;
++	status = "okay";
++};
++
++&fmc {
++	status = "okay";
++	pinctrl-0 = <&pinctrl_fwspi_quad_default>;
++	pinctrl-names = "default";
++
++	flash@0 {
++		status = "okay";
++		m25p,fast-read;
++		label = "bmc";
++		spi-max-frequency = <50000000>;
++		spi-tx-bus-width = <4>;
++		spi-rx-bus-width = <4>;
++#include "aspeed-evb-flash-layout-128.dtsi"
++	};
++
++	flash@1 {
++		status = "okay";
++		m25p,fast-read;
++		label = "fmc0:1";
++		spi-max-frequency = <50000000>;
++		spi-tx-bus-width = <4>;
++		spi-rx-bus-width = <4>;
++	};
++
++	flash@2 {
++		status = "disabled";
++		m25p,fast-read;
++		label = "fmc0:2";
++		spi-max-frequency = <50000000>;
++		spi-tx-bus-width = <4>;
++		spi-rx-bus-width = <4>;
++	};
++};
++
++&spi0 {
++	compatible = "aspeed,ast2700-spi-txrx", "aspeed,ast2700-spi";
++	status = "okay";
++	pinctrl-0 = <&pinctrl_spi0_default &pinctrl_spi0_quad_default &pinctrl_spi0_cs1_default>;
++	pinctrl-names = "default";
++
++	spi-aspeed-full-duplex;
++
++	fpga@0 {
++		status = "okay";
++		compatible = "nh,fpga-spi-bridge";
++		spi-max-frequency = <16000000>;
++		reg = <0>;
++		spi-tx-bus-width = <1>;
++		spi-rx-bus-width = <1>;
++	};
++
++	flash@1 {
++		status = "okay";
++		compatible = "jedec,spi-nor";
++		m25p,fast-read;
++		reg = <1>;
++		spi-max-frequency = <50000000>;
++		spi-tx-bus-width = <1>;
++		spi-rx-bus-width = <1>;
++
++		partitions {
++			compatible = "fixed-partitions";
++			#address-cells = <1>;
++			#size-cells = <1>;
++
++			host_bios@0 {
++				label = "pnor";
++				reg = <0x0 0x4000000>; // Adjust size (0x4000000 = 64MB)
++			};
++		};
++	};
++};
++
++
++&spi2 {
++	compatible = "aspeed,ast2700-spi-txrx";
++	pinctrl-0 = <&pinctrl_spi2_default>;
++	pinctrl-names = "default";
++	status = "okay";
++
++	spi-aspeed-full-duplex;
++
++	tpm0: tpmdev@0 {
++		compatible = "tcg,tpm_tis-spi";
++		spi-max-frequency = <25000000>;
++		reg = <0>;
++		status = "okay";
++
++		reset-gpios = <&gpio1 ASPEED_GPIO(G, 4) GPIO_ACTIVE_LOW>;
++	};
++};
++
++
++&emmc_controller {
++	status = "okay";
++	mmc-hs200-1_8v;
++};
++
++&emmc {
++	status = "okay";
++	bus-width = <4>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_emmc_default &pinctrl_emmcclk_driving &pinctrl_emmccmd_driving &pinctrl_emmcdat_driving>;
++
++	non-removable;
++	max-frequency = <200000000>;
++};
++
++
++&chassis {
++	status = "okay";
++};
++
++&mac0 {
++        status = "okay";
++        phy-mode = "rgmii-id";
++        pinctrl-names = "default";
++        pinctrl-0 = <&pinctrl_rgmii0_default &pinctrl_rgmii0_driving>;
++        fixed-link {
++                speed = <1000>;
++                full-duplex;
++                pause;
++        };
++};
++
++&mdio0 {
++	status = "okay";
++};
++
++&syscon1 {
++	assigned-clocks = <&syscon1 SCU1_CLK_MACHCLK>,
++			  <&syscon1 SCU1_CLK_RGMII>,
++			  <&syscon1 SCU1_CLK_RMII>;
++	assigned-clock-rates = <200000000>, <125000000>, <50000000>;
++};
++
++&espi0 {
++	status = "okay";
++	perif-dma-mode;
++	// perif-mmbi-enable;
++	// perif-mmbi-src-addr = <0x0 0xa8000000>;
++	// perif-mmbi-tgt-memory = <&espi0_mmbi_memory>;
++	// perif-mmbi-instance-num = <0x1>;
++	perif-mcyc-enable;
++	perif-mcyc-src-addr = <0x0 0x98000000>;
++	perif-mcyc-size = <0x0 0x10000>;
++	memory-region = <&espi0_mcyc_memory>;
++	// perif-rtc-enable;
++	vw-pltrst-monitor;
++	oob-dma-mode;
++};
++
++&rtc {
++	status = "okay";
++};
++
++&jtag0 {
++	status = "okay";
++};
++
++&sdio_controller {
++	status = "disabled";
++	mmc-hs200-1_8v;
++
++	vcc_sdhci0: regulator-vcc-sdhci0 {
++		compatible = "regulator-fixed";
++		regulator-name = "SDHCI0 Vcc";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		gpios = <&gpio1 ASPEED_GPIO(G, 6) GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++	};
++
++	vccq_sdhci0: regulator-vccq-sdhci0 {
++		compatible = "regulator-gpio";
++		regulator-name = "SDHCI0 VccQ";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <3300000>;
++		gpios = <&gpio1 ASPEED_GPIO(G, 7) GPIO_ACTIVE_HIGH>;
++		gpios-states = <1>;
++		states = <3300000 1>,
++			 <1800000 0>;
++	};
++
++};
++
++&sdhci {
++	status = "disabled";
++	bus-width = <4>;
++	max-frequency = <100000000>;
++	/* DDR50 bits in CAPA2 are not supported */
++	sdhci-caps-mask = <0x6 0x0>;
++	sdhci-drive-type = /bits/ 8 <3>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_sd_default>;
++	vmmc-supply = <&vcc_sdhci0>;
++	vqmmc-supply = <&vccq_sdhci0>;
++	sd-uhs-sdr104; /* enable sdr104 to execute tuning */
++};
++
++&i2c0 {
++	status = "okay";
++};
++
++&i2c1 {
++	status = "okay";
++};
++
++&i2c2 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c2_default>;
++
++	adm1266: adm1266@41 {
++		compatible = "adi,adm1266";
++		reg = <0x41>;
++	};
++};
++
++&i2c3 {
++	status = "okay";
++};
++
++&i2c4 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c4_default>;
++
++	eeprom@50 {
++		compatible = "atmel,24c64";
++		reg = <0x50>;
++		pagesize = <32>;
++	};
++};
++
++&i2c5 {
++	status = "disabled";
++};
++
++&i2c6 {
++	status = "okay";
++};
++
++&i2c7 {
++	status = "okay";
++};
++
++&i2c8 {
++	status = "okay";
++};
++
++&i2c9 {
++	status = "okay";
++};
++
++&i2c10 {
++	status = "okay";
++};
++
++&i2c11 {
++	status = "okay";
++};
++
++&i2c12 {
++	status = "okay";
++};
++
++&i2c13 {
++	status = "disabled";
++};
++
++
++&vhubb0 {
++	status = "disabled";
++};
++
++&vhubb1 {
++	status = "okay";
++	pinctrl-0 = <&pinctrl_usb2bd1_default>;
++};
++
++&wdt0 {
++	status = "okay";
++	aspeed,reset-type = "soc";
++};
++
++&wdt1 {
++	status = "okay";
++};
++
++/ {
++	aliases {
++		watchdog0 = &wdt0;
++		watchdog1 = &wdt1;
++	};
++};
++
++&otp {
++	status = "okay";
++};
++
+-- 
+2.34.1
+
