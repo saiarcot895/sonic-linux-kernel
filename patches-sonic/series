@@ -45,7 +45,8 @@ driver-net-tg3-change-dma-mask-for-57766.patch
 0005-dt-bindings-hwmon-Add-tmp75b-to-lm75.txt.patch
 0006-device-tree-bindinds-add-NXP-PCT2075-as-compatible-d.patch
 revert-acpi-osl-use-threaded-irq-for-sci.patch
-#platform-x86-int0002-remove-irqf-oneshot.patch # Upstreamed
+# Upstreamed in 6.12.94 (stable commit f6bc712877f2); backport is now a no-op.
+#platform-x86-int0002-remove-irqf-oneshot.patch
 #Support-for-fullcone-nat.patch # TODO(trixie): update for current version
 
 #
@@ -74,7 +75,6 @@ driver-i2c-smbus-add-disable_spd-module-parameter.patch
 ###-> mellanox_sdk-end
 
 ###-> mellanox_hw_mgmt-start
-0001-mlxbf-bootctl-Constify-struct-bin_attribute.patch
 0002-platform-mellanox-mlxbf-pmc-Add-support-for-monitori.patch
 0003-platform-mellanox-mlxbf-pmc-Add-support-for-clock_me.patch
 0004-platform-mellanox-mlxbf-bootctl-use-sysfs_emit-inste.patch
@@ -133,6 +133,7 @@ driver-i2c-smbus-add-disable_spd-module-parameter.patch
 0061-platform-mellanox-mlxreg-io-Increase-max-supported-a.patch
 0062-Add-support-for-NXP-s-PCF85053A-RTC-chip.patch
 0063-reset-phy-using-polling-function-not-register-write.patch
+0064-hwmon-pmbus-isl68137-Add-support-for-Renesas-RAA2289.patch
 8000-mlxsw-Use-weak-reverse-dependencies-for-firmware-fla.patch
 8002-mlxsw-i2c-SONIC-ISSU-Prevent-transaction-execution-f.patch
 8003-mlxsw-minimal-Downstream-Ignore-error-reading-SPAD-r.patch
@@ -145,6 +146,7 @@ driver-i2c-smbus-add-disable_spd-module-parameter.patch
 8010-mlxsw-minimal-Downstream-Disable-ethtool-interface.patch
 8011-hwmon-pmbus-Downstream-Workaround-for-psu-attributes.patch
 8013-hwmon-pmbus-mp2975-Clear-interrupts-at-probe.patch
+8014-mlxsw-i2c-Downstream-Increase-I2C-timeout-for-HW-sem.patch
 ###-> mellanox_hw_mgmt-end
 
 # Cisco patches for 5.10 kernel
@@ -236,6 +238,8 @@ driver-tty-serial-8250-add-support-for-fintek-F81214E.patch # Linux upstream pen
 0014-i2c-xiic-cosmetic-use-resource-format-specifier-in-d.patch
 0015-i2c-xiic-use-numbered-adapter-registration.patch
 0016-i2c-xiic-skip-input-clock-setup-on-non-OF-systems.patch
+0017-dt-bindings-trivial-devices-Add-Delta-Q54SN120A1-and-Q54SW120A7.patch
+0018-hwmon-pmbus-Add-Delta-Q54SN120A1-Q54SW120A7-chip.patch
 
 # 
 0001-PCI-AER-Simplify-pci_print_aer.patch
@@ -263,18 +267,24 @@ driver-tty-serial-8250-add-support-for-fintek-F81214E.patch # Linux upstream pen
 #
 ############################################################
 ###-> aspeed
-#0001-aspeed-ast2700-support.patch
-#0002-aspeed-ast2700-aspeed-new-files-update-to-6.12-00.07.02.patch
-#0003-aspeed-ast2700-aspeed-diff-vendor-independent-changes-update-to-6.12-00.07.02.patch
-#mmc-sdhci-of-aspeed-Improve-CMD6-timing_v6.18.patch
-#mmc-sdhci-of-aspeed-Optimize-tuning-mechanism_v6.12.patch
-#aspeed-spi-txrx-fix-full-duplex-capture.patch
-#nexthop-b27-dts.patch
-#0001-Add-device-tree-for-Nokia-BMC-H6-128-platform.patch
-#arista_goldfinch-dts.patch
-#0001-DTS-Aspeed-Nvidia-spc6-a1-bmc-dts.patch
-#0002-DTS-Aspeed-Nvidia-spc6-bmc-dts.patch
-#micas-m2-w6950-128oc-dts.patch
+###-> aspeed-upstream
+# Full regen against pristine 6.12.94 at Aspeed tag v00.07.04, split three ways:
+#   0001 - all Aspeed-namespace files (new + updated)
+#   0002 - new non-Aspeed dependency subsystems (i3c/mctp, jtag, dwc trng, ...)
+#   0003 - modifications to shared/common kernel files (review surface)
+# The mmc-sdhci-of-aspeed CMD6-timing and tuning backports are subsumed by
+# v00.07.04 (folded into 0001), so they are no longer carried separately.
+0001-aspeed-ast2700-support.patch
+0002-aspeed-ast2700-non-aspeed-deps-update-to-6.12.94-00.07.04.patch
+0003-aspeed-ast2700-shared-kernel-changes-update-to-6.12.94-00.07.04.patch
+###-> aspeed-upstream-end
+aspeed-spi-txrx-fix-full-duplex-capture.patch
+nexthop-b27-dts.patch
+0001-Add-device-tree-for-Nokia-BMC-H6-128-platform.patch
+arista_goldfinch-dts.patch
+0001-DTS-Aspeed-Nvidia-spc6-a1-bmc-dts.patch
+0002-DTS-Aspeed-Nvidia-spc6-bmc-dts.patch
+micas-m2-w6950-128oc-dts.patch
 ###-> aspeed-end
 
 ###-> nvidia_aspeed_bmc-start
@@ -285,6 +295,11 @@ driver-tty-serial-8250-add-support-for-fintek-F81214E.patch # Linux upstream pen
 #0005-mctp-driver-net-Fix-MCTP-over-USB.patch
 #0006-jtag-Add-JTAG-core-headers-GPIO-mux-and-locking-support.patch
 #0007-JTAG-Aspeed-Fix-kernel-configuration.patch
+#0008-arm64-dts-aspeed-spc6-bmc-ext-phram-env-tpm-i3c-pull.patch
+#0009-arm64-dts-aspeed-split-SPC6-BMC-DTS-for-SONiC-and-Op.patch
+#0010-net-ftgmac100-hard-reset-mac-for-sgmii.patch
+#0011-arm64-dts-aspeed-spc6-bmc-fix-sgmii-phy-names.patch
+#0012-usb-ehci-Add-Aspeed-AST2700-support.patch
 ###-> nvidia_aspeed_bmc-end
 
 #
