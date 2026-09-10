@@ -45,7 +45,8 @@ driver-net-tg3-change-dma-mask-for-57766.patch
 0005-dt-bindings-hwmon-Add-tmp75b-to-lm75.txt.patch
 0006-device-tree-bindinds-add-NXP-PCT2075-as-compatible-d.patch
 revert-acpi-osl-use-threaded-irq-for-sci.patch
-#platform-x86-int0002-remove-irqf-oneshot.patch # Upstreamed
+# Upstreamed in 6.12.94 (stable commit f6bc712877f2); backport is now a no-op.
+#platform-x86-int0002-remove-irqf-oneshot.patch
 #Support-for-fullcone-nat.patch # TODO(trixie): update for current version
 
 #
@@ -267,21 +268,25 @@ driver-tty-serial-8250-add-support-for-fintek-F81214E.patch # Linux upstream pen
 ############################################################
 ###-> aspeed
 ###-> aspeed-upstream
-#0001-aspeed-ast2700-support.patch
-#0002-aspeed-ast2700-aspeed-new-files-update-to-6.12-00.07.02.patch
-#0003-aspeed-ast2700-aspeed-diff-vendor-independent-changes-update-to-6.12-00.07.02.patch
-#mmc-sdhci-of-aspeed-Improve-CMD6-timing_v6.18.patch
-#mmc-sdhci-of-aspeed-Optimize-tuning-mechanism_v6.12.patch
+# Full regen against pristine 6.12.94 at Aspeed tag v00.07.04, split three ways:
+#   0001 - all Aspeed-namespace files (new + updated)
+#   0002 - new non-Aspeed dependency subsystems (i3c/mctp, jtag, dwc trng, ...)
+#   0003 - modifications to shared/common kernel files (review surface)
+# The mmc-sdhci-of-aspeed CMD6-timing and tuning backports are subsumed by
+# v00.07.04 (folded into 0001), so they are no longer carried separately.
+0001-aspeed-ast2700-support.patch
+0002-aspeed-ast2700-non-aspeed-deps-update-to-6.12.94-00.07.04.patch
+0003-aspeed-ast2700-shared-kernel-changes-update-to-6.12.94-00.07.04.patch
 ###-> aspeed-upstream-end
-#aspeed-spi-txrx-fix-full-duplex-capture.patch
-#nexthop-b27-dts.patch
-#serial-8250_aspeed-fix-UDMA-ring-pointer-desync.patch
-#soc-aspeed-udma-lower-idle-timeout.patch
-#0001-Add-device-tree-for-Nokia-BMC-H6-128-platform.patch
-#arista_goldfinch-dts.patch
-#0001-DTS-Aspeed-Nvidia-spc6-a1-bmc-dts.patch
-#0002-DTS-Aspeed-Nvidia-spc6-bmc-dts.patch
-#micas-m2-w6950-128oc-dts.patch
+aspeed-spi-txrx-fix-full-duplex-capture.patch
+nexthop-b27-dts.patch
+serial-8250_aspeed-fix-UDMA-ring-pointer-desync.patch
+soc-aspeed-udma-lower-idle-timeout.patch
+0001-Add-device-tree-for-Nokia-BMC-H6-128-platform.patch
+arista_goldfinch-dts.patch
+0001-DTS-Aspeed-Nvidia-spc6-a1-bmc-dts.patch
+0002-DTS-Aspeed-Nvidia-spc6-bmc-dts.patch
+micas-m2-w6950-128oc-dts.patch
 ###-> aspeed-end
 
 ###-> nvidia_aspeed_bmc-start
